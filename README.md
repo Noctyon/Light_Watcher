@@ -79,7 +79,7 @@ IoT, Home Automation, Battery Backup, Light Monitoring, Електрика, Св
 ## Прошивка
 
 ### Вихідний код
-Остання версія прошивки `V1.6`: [`Light_Watcher_Firmware_v1.6.ino`](Light_Watcher_Firmware/Light_Watcher_Firmware_v1.6.ino) (Update developed by @Noctyon)
+Остання версія прошивки `V1.6`: [`Light_Watcher_Firmware_v1.6.ino`](Light_Watcher_Firmware/Light_Watcher_Firmware_v1.6.ino) (Update developed by [Noctyon](https://github.com/Noctyon))
 
 Зміни тільки у коді, жодних змін в залізі чи інших частинах немає, тому рекомендую прошивати саме її
 [Детально про зміни](https://github.com/Noctyon/Light_Watcher/releases/tag/v1.6)
