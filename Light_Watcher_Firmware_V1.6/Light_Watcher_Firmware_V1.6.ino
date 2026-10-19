@@ -3,7 +3,7 @@ Repository: https://github.com/Stanislav-developer/Light_Watcher
 Authors: 
   Stanislav Turii (GitHub: https://github.com/Stanislav-developer || Youtube: https://www.youtube.com/@TehnoMaisterna)
   Noctyon (GitHub: https://github.com/Noctyon)
-Date: 2026.10.15
+Date: 2026.10.20
 
 НАЛАШТУВАННЯ ДЛЯ ЗАЛИВКИ ПРОШИВКИ (ESP32-C3):
 У Tools:
@@ -33,7 +33,7 @@ Date: 2026.10.15
 // Конфігурація пінів
 #define readPin 3 // Аналоговий пін, вимірює рівень заряду на вході(детектує наявність електромережі). Можна використовувати будь який пін на 1АЦП
 
-// Дані для конфігурації(можна прописати зразу або заповнити пізніше при налаштуванні у Веб Інтерфейсі)
+// Дані для конфігурації(треба заповнити при налаштуванні у WEB інтерфейсі)
 String  ssid = ""; // Назва WiFi мережі  
 String  password = ""; // Пароль до WiFi мережі
 String  botToken = ""; // API Токен бота
@@ -56,18 +56,18 @@ bool powerStatus = true; // true - мережа присутня, false - мер
 bool messageFlag = false; // true - повідомлення про відключення вже надіслано, false - повідомлення ще не надіслано
 bool lastOutageDetect; // Останнє детектування зникнення електромережі, потрібне на випадок якщо батарея розрядиться
 bool missMessage; // Прапорець який вказує що повідомлення про появу світла не надіслалось
-uint16_t powerOutageCount; // К-сть відключень електроенергії за весь час(зберігається у Preferences)
+uint16_t powerOutageCount = 0; // К-сть відключень електроенергії за весь час(зберігається у Preferences)
 
-uint32_t powerOffTime; // Час відключення світла в мілісекундах (millis)
-uint32_t powerOnTime; // Час появи світла в мілісекундах (millis)
-time_t powerOffTimestamp; // Unix timestamp відключення (секунди з 1970)
-time_t powerOnTimestamp; // Unix timestamp появи світла (секунди з 1970)
-time_t currentTimestamp; // Поточний Unix timestamp для розрахунків (секунди з 1970)
+uint32_t powerOffTime = 0; // Час відключення світла в мілісекундах (millis)
+uint32_t powerOnTime = 0; // Час появи світла в мілісекундах (millis)
+time_t powerOffTimestamp = 0; // Unix timestamp відключення (секунди з 1970)
+time_t powerOnTimestamp = 0; // Unix timestamp появи світла (секунди з 1970)
+time_t currentTimestamp = 0; // Поточний Unix timestamp для розрахунків (секунди з 1970)
 
 String currentTZ = ""; // Поточний часовий пояс (EEST-2 або EEST-3)
-String powerOffFormattedTime; // Відформатований час відключення (дд.мм.рррр чч:хх:сс)
-String powerOnFormattedTime; // Відформатований час появи світла (дд.мм.рррр чч:хх:сс)
-String lastMissMessage; // Змінна у якій лежить сформоване повідомлення про появу світла(якщо wifi мережа була відсутня)
+String powerOffFormattedTime = ""; // Відформатований час відключення (дд.мм.рррр чч:хх:сс)
+String powerOnFormattedTime = ""; // Відформатований час появи світла (дд.мм.рррр чч:хх:сс)
+String lastMissMessage = ""; // Змінна у якій лежить сформоване повідомлення про появу світла(якщо wifi мережа була відсутня)
 
 // HTML код розмітки WEB Інтерфейсу
 const char index_html[] PROGMEM = R"rawliteral(
@@ -261,7 +261,7 @@ void applyTimezone(String tz) {
 
 // Конвертація секунд Unix timestamp у кількість днів, годин, хвилин.
 String formatDuration(time_t seconds) {
-  String result;
+  String result = "";
   uint8_t days = seconds / 86400,
     hours = (seconds % 86400) / 3600,
     minutes = (seconds % 3600) / 60,
@@ -276,7 +276,7 @@ String formatDuration(time_t seconds) {
   if (minutes > 0 || hours > 0 || days > 0) {
     result += String(minutes) + " хв. ";
   }
-  if (minutes < 10) {
+  if (minutes < 10 && hours == 0 && days == 0) {
     result += String(secs) + " сек.";
   }
   
@@ -299,10 +299,10 @@ String getFormattedTime() {
 
 // Функція перевірки та підтримки стабільного WiFi з'єднання
 void checkWiFi() {
+  static uint32_t lastWiFiCheck = 0;
+  uint8_t interval = 30; // Інтервал перевірки в секундах
 
-  static uint32_t lastWiFiCheck;
-
-  if (millis() - lastWiFiCheck > 30000) { // Перевіряємо кожні 30 секунд
+  if (millis() - lastWiFiCheck > interval * 1000) {
     lastWiFiCheck = millis(); // Оновлюємо таймер
 
     if (WiFi.status() != WL_CONNECTED) {
@@ -322,7 +322,7 @@ void checkWiFi() {
         Serial.println("Повідомлення про відновлення надіслано (із затримкою)");
       } 
       else {
-        Serial.println("Не вдалося відправити. Ще одна спроба через 30 сек...");
+        Serial.println("Не вдалося відправити. Ще одна спроба через " + String(interval) + " сек...");
       }
 
     }
@@ -377,7 +377,7 @@ void handleNewMessages() {
     }
   }
   bot.sendMessage(chat_id, message, "HTML");
-  bot.sendMessage(groupId, message, "HTML");
+
   // Приватні повідомлення, може писати тільки власник бота.
   if (chat_id == chatId && text != "Світло є чи нема?") {
     if (text == "/help") {
@@ -401,7 +401,7 @@ void handleNewMessages() {
       • Працює від акумулятора
       • Зберігає статистику
 
-      • Сторінка проекту:
+      • Сторінка проєкту:
       📦 <a href='https://github.com/Stanislav-developer/Light_Watcher'>GitHub Repository</a>)";
     }
     
@@ -505,7 +505,7 @@ void setup() {
   bot.updateToken(botToken);
 
   // Завантажуємо збережені дані змінних з енергонезалежної пам'яті
-  powerOutageCount = preferences.getInt("powerOutageCnt");
+  powerOutageCount = preferences.getUInt("powerOutageCnt");
   currentTZ = preferences.getString("tz-rule", "EEST-2");
   powerOffTimestamp = preferences.getUInt("pwrOffTmstmp");
   lastOutageDetect = preferences.getBool("lastUotDetect");
@@ -519,7 +519,7 @@ void setup() {
 
   Serial.print("Під'єднання до WiFi: ");
 
-  for (uint8_t wifi_attempts; WiFi.status() != WL_CONNECTED && wifi_attempts <= 50; wifi_attempts++) {
+  for (uint8_t wifi_attempts = 0; WiFi.status() != WL_CONNECTED && wifi_attempts <= 50; wifi_attempts++) {
     delay(500);
     Serial.print(".");
   }
@@ -527,79 +527,79 @@ void setup() {
   Serial.println();
 
   if(WiFi.status() != WL_CONNECTED) {
-    Serial.println("WiFi connection error!\nЗапуск Web Server для конфігурації");
-    launchWebServer(); // Запускаємо WEB Server для конфігураціїї
+    Serial.println("WiFi connection error!");
   }
   else {
     Serial.println("WiFi Connected!");
+  }
 
-    // Якщо є WiFi то синхронізуємо час з NTP
-    configTime(0, 0, ntp1, ntp2, ntp3);
-    applyTimezone(currentTZ);
+  // Якщо є WiFi то синхронізуємо час з NTP
+  configTime(0, 0, ntp1, ntp2, ntp3);
+  applyTimezone(currentTZ);
 
-    Serial.print("Синхронізація часу: ");
+  Serial.print("Синхронізація часу: ");
 
-    struct tm timeinfo;
+  struct tm timeinfo;
 
-    for (uint8_t attempts; !getLocalTime(&timeinfo) && attempts < 5; attempts++) {
-      delay(500);
-      Serial.print(".");
-    }
+  for (uint8_t attempts; !getLocalTime(&timeinfo) && attempts < 5; attempts++) {
+    delay(500);
+    Serial.print(".");
+  }
 
-    Serial.println();
+  Serial.println();
 
-    if (!getLocalTime(&timeinfo)) {
-      Serial.println("Час НЕ синхронізовано!");
-    }
-    else  {
-      Serial.println("Час синхронізовано!");
-    }
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Час НЕ синхронізовано!");
+  }
+  else  {
+    Serial.println("Час синхронізовано!");
+  }
 
-    client.setInsecure();
-    client.setTimeout(4); // Зменшуємо Timeout на відправку повідомлень, щоб не переповнювати Watchdog
+  client.setInsecure();
+  client.setTimeout(4); // Зменшуємо Timeout на відправку повідомлень, щоб не переповнювати Watchdog
 
-    powerStatus = checkPowerStatus(); // Перевіряємо статус живлення
+  powerStatus = checkPowerStatus(); // Перевіряємо статус живлення
 
-    // Якщо було замічено вимкнення електроенергії але світло наявне(Вірогідно акумулятор розрядився)
-    if (lastOutageDetect && powerStatus) {
-      messageFlag = false;
-      time(&powerOnTimestamp);
-      uint32_t outageSeconds = powerOnTimestamp - powerOffTimestamp;
+  // Якщо було замічено вимкнення електроенергії але світло наявне(Вірогідно акумулятор розрядився)
+  if (lastOutageDetect && powerStatus) {
+    messageFlag = false;
+    time(&powerOnTimestamp);
+    uint32_t outageSeconds = powerOnTimestamp - powerOffTimestamp;
+    powerOnFormattedTime = getFormattedTime();
 
-      String message = "🟢 <b>СВІТЛО З'ЯВИЛОСЯ</b>\n\n"
-        "🕐 Час відновлення: " + getFormattedTime() + "\n"
-        "⏱ Тривалість відключення: " + formatDuration(outageSeconds) + "\n"
-        "⚠️ Заряд акумулятора був критичний та пристрій вимкнувся\n"
-        "🔌 Живлення від мережі відновлено";
+    String message = "🟢 <b>СВІТЛО З'ЯВИЛОСЯ</b>\n\n"
+      "🕐 Час відновлення: " + powerOnFormattedTime + "\n"
+      "⏱ Тривалість відключення: " + formatDuration(outageSeconds) + "\n"
+      "⚠️ Заряд акумулятора був критичний та пристрій вимкнувся\n"
+      "🔌 Живлення від мережі відновлено";
 
-      lastOutageDetect = false;
-      preferences.putBool("lastUotDetect", lastOutageDetect);
+    lastOutageDetect = false;
+    preferences.putBool("lastUotDetect", lastOutageDetect);
 
-      bot.sendMessage(chatId, message, "HTML");
-      bot.sendMessage(groupId, message, "HTML");
-      Serial.println("Повідомлення про відновлення надіслано");
+    bot.sendMessage(chatId, message, "HTML");
+    bot.sendMessage(groupId, message, "HTML");
+    Serial.println("Повідомлення про відновлення надіслано");
+  }
+  else {
+    String startMessage = "⚡ <b>Light Watcher активовано</b>\n\n"
+      "🕐 Час запуску: " + getFormattedTime() + "\n"
+      "💡 Електромережа: ";
+    if (powerStatus) {
+      startMessage += "<b>ПРИСУТНЯ</b> ✅";
     }
     else {
-      String startMessage = "⚡ <b>Light Watcher активовано</b>\n\n"
-        "🕐 Час запуску: " + getFormattedTime() + "\n"
-        "💡 Електромережа: ";
-      if (powerStatus) {
-        startMessage += "<b>ПРИСУТНЯ</b> ✅";
-      }
-      else {
-        powerOffTime = millis();
-        messageFlag = true;
-        startMessage += "<b>ВІДСУТНЯ</b> ⚠️\n"
-          "⚠️ Пристрій запущено на резервному живленні";
-      }
+      powerOffTime = millis();
+      messageFlag = true;
+      startMessage += "<b>ВІДСУТНЯ</b> ⚠️\n"
+        "⚠️ Пристрій запущено на резервному живленні";
+    }
 
-      if (bot.sendMessage(chatId, startMessage, "HTML")) {
-        Serial.println("Стартове повідомлення надіслано :)");
-      }
-      else {
-        Serial.println("Стартове повідомлення НЕ надіслано, введена НЕ правильна інформація!!!");
-        launchWebServer(); // Запускаємо WEB Server для конфігураціїї (ймовірно дані Telegram API було введено НЕВІРНО)
-      }
+    if (bot.sendMessage(chatId, startMessage, "HTML")) {
+      Serial.println("Стартове повідомлення надіслано :)");
+    }
+    else {
+      Serial.println("Стартове повідомлення НЕ надіслано, введена НЕ правильна інформація!!!");
+      launchWebServer(); // Запускаємо WEB Server для конфігураціїї (ймовірно дані Telegram API було введено НЕВІРНО)
     }
   }
 
@@ -655,7 +655,7 @@ void loop() {
     // Перевіряємо наявність WiFi мережі
     if (WiFi.status() != WL_CONNECTED) {
       missMessage = true;
-      message += "Світло вимкнули: " + getFormattedTime() + "\n"
+      message += "Світло вимкнули: " + powerOffFormattedTime + "\n"
         "📵 Мережа WiFi була відсутня";
       lastMissMessage = message; // Архівуємо повідомлення, щоб відправити його як тільки WiFi з'явиться
       Serial.println("Повідомлення про відновлення НЕ надіслано");
@@ -681,13 +681,14 @@ void loop() {
 ІСТОРІЯ ВЕРСІЙ:
 v1.0 (25.01.2026) - Базовий функціонал.
 v1.5 (13.02.2026) - WEB Інтерфейс, функція відкладених повідомлень.
-v1.6 (15.10.2026) - змінено дизайн WEB Інтерфейса, оптимізація, покращення debug у Serial. (Update developed by Noctyon)
+v1.6 (20.10.2026) - змінено дизайн WEB Інтерфейса, оптимізація, покращення debug у Serial. (Update developed by Noctyon)
 
-v1.6 (15.10.2026)
+v1.6
 - [NEW] Зміна дизайну Web-інтерфейса.
 - [FIX] Оптимізація коду.
 - [FIX] Покращено debug у Serial.
 
 TO DO:
-  Забезпечити стабільну роботу якщо роутер перезавантажується при відключеннях світла
+1. Забезпечити стабільну роботу якщо роутер перезавантажується при відключеннях світла
+2. Додати можливість кастомізації
 */
