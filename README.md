@@ -128,7 +128,7 @@ const char* groupId = "GROUP_CHAT_ID";    // Chat ID групи (опціона�
 </table>
 
 ### Файли для завантаження
-**STL моделі для друку:** [`STL Models`](STL%20Models)  
+**STL моделі для друку:** [`STL Models`](STL%20Models/Main)  
 **CAD файл (Fusion 360):** [`CAD File/Main.f3z`](CAD%20File/Main.f3z)
 
 ## Збірка
