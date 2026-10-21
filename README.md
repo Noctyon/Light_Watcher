@@ -100,15 +100,15 @@ IoT, Home Automation, Battery Backup, Light Monitoring, Електрика, Св
 
 Перед завантаженням прошивки замініть значення на свої(за бажанням):
 ```cpp
-const char* ssid = "YOUR_WIFI";           // Назва WiFi мережі
-const char* password = "YOUR_PASSWORD";   // Пароль WiFi
-const char* botToken = "YOUR_TOKEN";      // Токен бота
-const char* chatId = "YOUR_CHAT_ID";      // Ваш Chat ID
-const char* groupId = "GROUP_CHAT_ID";    // Chat ID групи (опціонально)
+const char* ssid = "";       // Назва WiFi мережі
+const char* password = "";   // Пароль WiFi
+const char* botToken = "";   // Токен бота
+const char* chatId = "";     // Ваш Chat ID
+const char* groupId = "";    // Chat ID групи (опціонально)
 ```
 Також ви зможете заповнити їх пізніше у WEB Інтерфейсі конфігурації:
 
-<img src="Images/Photos/Photo_10.jpg" alt="WEB Інтерфейс" width="50%">
+<img src="Images/Photos/WEB_v1.6.jpg" alt="WEB Інтерфейс" width="50%">
 
 ## Корпус
 ### Габарити (ДхШхВ): 90 x 85 x 30 мм
