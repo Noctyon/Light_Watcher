@@ -238,7 +238,9 @@ void handleSave() {
       String response = "<html><head><meta charset='utf-8'></head>"
         "<body style='text-align:center; font-family:Arial;'>"
         "<h1 style='color:green;'>✅ Данні збережено! ✅</h1>"
-        "<p>Пристрій перезавантажується...</p></body></html>";
+        "<p>Пристрій перезавантажується...</p>"
+        "<p>Закрийте цю сторінку</p>"
+        "</body></html>";
       server.send(200, "text/html", response);
       delay(2000);
       ESP.restart();
