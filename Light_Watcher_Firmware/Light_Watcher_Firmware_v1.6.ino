@@ -382,29 +382,26 @@ void handleNewMessages() {
   // Приватні повідомлення, може писати тільки власник бота.
   if (chat_id == chatId && text != "Світло є чи нема?") {
     if (text == "/help") {
-      message = "👋 Привіт, " + from_name + "!\n\n" + R"(Доступні команди:
-      /info - Про бота
-      /status - Стан системи
-      /set_summer_time - Встановити літній час
-      /set_winter_time - Встановити зимовий час
-      /clear_data  - Очистити конфігурацію та статистику
-      /restart - Віддалений перезапуск бота)";
-
+      message = "👋 Привіт, " + from_name + "!\n\n"
+      "Доступні команди:\n"
+      "/info - Про бота\n"
+      "/status - Стан системи\n"
+      "/set_summer_time - Встановити літній час\n"
+      "/set_winter_time - Встановити зимовий час\n"
+      "/clear_data  - Очистити конфігурацію та статистику\n"
+      "/restart - Віддалений перезапуск бота";
     }
     
     else if (text == "/info") {
-      message = R"(⚡ <b>Light Watcher</b> v1.6
-
-      <b>Автоматичний моніторинг електромережі</b>
-
-      🤖 Що робить бот:
-      • Повідомляє про відключення світла
-      • Рахує час без електрики
-      • Працює від акумулятора
-      • Зберігає статистику
-
-      • Сторінка проєкту:
-      📦 <a href='https://github.com/Stanislav-developer/Light_Watcher'>GitHub Repository</a>)";
+      message = "⚡ <b>Light Watcher</b> v1.6\n\n"
+      " <b>Автоматичний моніторинг електромережі</b>\n"
+      " 🤖 Що робить бот:\n"
+      " • Повідомляє про відключення світла\n"
+      " • Рахує час без електрики\n"
+      " • Працює від акумулятора\n"
+      " • Зберігає статистику\n\n"
+      " • Сторінка проєкту:\n"
+      " 📦 <a href='https://github.com/Stanislav-developer/Light_Watcher'>GitHub Repository</a>";
     }
     
     else if (text == "/status") {
@@ -487,7 +484,7 @@ void setup() {
     launchWebServer();
   }
 
-  // Завантаження даних у змінні(Якщо у preferences ніякої інформації немає, залишаємо те що ми прописали у коді)
+  // Завантаження даних у змінні
   ssid = preferences.getString("ssid", ssid);
   password = preferences.getString("pass", password);
   botToken = preferences.getString("token", botToken);
@@ -530,8 +527,7 @@ void setup() {
 
   if(WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi connection error!");
-  }
-  else {
+  } else {
     Serial.println("WiFi Connected!");
   }
 
@@ -552,13 +548,12 @@ void setup() {
 
   if (!getLocalTime(&timeinfo)) {
     Serial.println("Час НЕ синхронізовано!");
-  }
-  else  {
+  } else  {
     Serial.println("Час синхронізовано!");
   }
 
   client.setInsecure();
-  client.setTimeout(4); // Зменшуємо Timeout на відправку повідомлень, щоб не переповнювати Watchdog
+  client.setTimeout(2); // Зменшуємо Timeout на відправку повідомлень, щоб не переповнювати Watchdog
 
   powerStatus = checkPowerStatus(); // Перевіряємо статус живлення
 
@@ -579,17 +574,15 @@ void setup() {
     preferences.putBool("lastUotDetect", lastOutageDetect);
 
     bot.sendMessage(chatId, message, "HTML");
-    bot.sendMessage(groupId, message, "HTML");
+    if (groupId.length() > 0) {bot.sendMessage(groupId, message, "HTML");}
     Serial.println("Повідомлення про відновлення надіслано");
-  }
-  else {
+  } else {
     String startMessage = "⚡ <b>Light Watcher активовано</b>\n\n"
       "🕐 Час запуску: " + getFormattedTime() + "\n"
       "💡 Електромережа: ";
     if (powerStatus) {
       startMessage += "<b>ПРИСУТНЯ</b> ✅";
-    }
-    else {
+    } else {
       powerOffTime = millis();
       messageFlag = true;
       startMessage += "<b>ВІДСУТНЯ</b> ⚠️\n"
@@ -598,23 +591,20 @@ void setup() {
 
     if (bot.sendMessage(chatId, startMessage, "HTML")) {
       Serial.println("Стартове повідомлення надіслано :)");
-    }
-    else {
+    } else {
       Serial.println("Стартове повідомлення НЕ надіслано, введена НЕ правильна інформація!!!");
       launchWebServer(); // Запускаємо WEB Server для конфігураціїї (ймовірно дані Telegram API було введено НЕВІРНО)
     }
   }
 
   // Щоб бот не відповідав на всі попередні повідомлення, чистимо чергу
-  uint16_t newMessage = bot.getUpdates(-1);
-  if (newMessage > 0) {
+  if (bot.getUpdates(-1) > 0) {
     bot.last_message_received = bot.messages[0].update_id;
   }
 }
 
 // Головна функція у якій код виконується постійно
 void loop() {
-
   checkWiFi(); // Перевіряємо WiFi з'єднання
 
   bool currentPowerStatus = checkPowerStatus(); // Перевіряємо стан електромережі
@@ -636,7 +626,7 @@ void loop() {
     String message = "🔴 " + (powerOffFormattedTime.length() > 6 ? powerOffFormattedTime.substring(11, 16) : powerOffFormattedTime) +" <b>СВІТЛО ВИМКНУЛИ</b>";
     
     bot.sendMessage(chatId, message, "HTML"); //Відсилаємо повідомлення у бота
-    bot.sendMessage(groupId, message, "HTML"); //Відсилаємо повідомлення у групу
+    if (groupId.length() > 0) {bot.sendMessage(groupId, message, "HTML");} //Відсилаємо повідомлення у групу
     Serial.println("Повідомлення про відключення надіслано");
   }
 
@@ -661,10 +651,9 @@ void loop() {
         "📵 Мережа WiFi була відсутня";
       lastMissMessage = message; // Архівуємо повідомлення, щоб відправити його як тільки WiFi з'явиться
       Serial.println("Повідомлення про відновлення НЕ надіслано");
-    } 
-    else {
+    } else {
       bot.sendMessage(chatId, message, "HTML");
-      bot.sendMessage(groupId, message, "HTML");
+      if (groupId.length() > 0) {bot.sendMessage(groupId, message, "HTML");}
       Serial.println("Повідомлення про відновлення надіслано");
     }
   }
