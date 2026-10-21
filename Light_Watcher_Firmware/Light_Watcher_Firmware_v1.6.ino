@@ -326,7 +326,7 @@ void checkWiFi() {
       else {
         Serial.println("Не вдалося відправити. Ще одна спроба через " + String(interval) + " сек...");
       }
-
+      return;
     }
   }
 }
@@ -378,7 +378,6 @@ void handleNewMessages() {
         "🕐 Час відключення: " + powerOffFormattedTime;
     }
   }
-  bot.sendMessage(chat_id, message, "HTML");
 
   // Приватні повідомлення, може писати тільки власник бота.
   if (chat_id == chatId && text != "Світло є чи нема?") {
@@ -390,6 +389,7 @@ void handleNewMessages() {
       /set_winter_time - Встановити зимовий час
       /clear_data  - Очистити конфігурацію та статистику
       /restart - Віддалений перезапуск бота)";
+
     }
     
     else if (text == "/info") {
@@ -456,13 +456,13 @@ void handleNewMessages() {
       message = "❓ Невідома команда. Список команд: /help";
     }
 
-    bot.sendMessage(chat_id, message, "HTML");
     if (reset) {
       reset = false;
       delay(1000);
       ESP.restart(); 
     }
   }
+  bot.sendMessage(chat_id, message, "HTML");
 }
 
 // Функція у якій код виконується лише раз при старті програми
